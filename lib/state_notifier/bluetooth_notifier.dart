@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:ebike_app/helper/api_state.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class BluetoothListNotifier
     extends StateNotifier<ApiState<List<BluetoothDevice>>> {
@@ -58,55 +58,76 @@ class GetBluetoothDataNotifier extends StateNotifier<ApiState<String>> {
     try {
       print("getData start");
       state = const ApiState.loading();
-
+      await Permission.bluetooth.request();
+      await Permission.bluetoothConnect.request();
+      await Permission.bluetoothScan.request();
+      await Permission.bluetoothAdvertise.request();
       print("scan start");
       // Scan for devices with a specific name or service UUID
-      List<ScanResult> scanResults = await FlutterBluePlus.instance
-          .scan(timeout: const Duration(seconds: 5))
-          .toList();
-      print("scan end");
-      print('scan List size ${scanResults.length}');
-      if (scanResults.isNotEmpty) {
-        // Find the desired device in the scan results
-        ScanResult desiredDevice = scanResults.first;
-        print(
-            'scan 1st Device:\nDevice id ${scanResults.first.device.id.id}\nDevice name: ${scanResults.first.device.name}');
-        // ScanResult desiredDevice = scanResults.firstWhere(
-        //     (result) => result.device.id.toString() == '414208902DE6',
-        //     //(result) => result.device.id.toString() == '0CB815C3CE1A',
-        //     orElse: () => throw Exception('Device not found'));
+      // List<ScanResult> scanResults = await FlutterBluePlus.instance
+      //     .scan(timeout: const Duration(seconds: 5))
+      //     .toList();
+      await _bluetooth.bondedDevices.then((event) async {
+        // devices = event;
+        // print("Paired devices list size ${event.length}");
+        // state = ApiState.loaded(data: devices);
+        print('scan List size ${event.length}');
+        if (event.isNotEmpty) {
+          event
+              .map((e) => print(
+                  'Paired Device List :\nDevice id ${e.id}\nDevice name: ${e.name}'))
+              .toList();
+          // Find the desired device in the scan results
+          // ScanResult desiredDevice = scanResults.first;
+          // scanResults
+          //     .map((e) => print(
+          //         'Scan Device List :\nDevice id ${e.device.id}\nDevice name: ${e.device.name}'))
+          //     .toList();
 
-        // Connect to the device
-        device = desiredDevice.device;
-        print('device connect start');
-        await device.connect();
-        print('device connect end');
+          BluetoothDevice desiredDevice = event.firstWhere(
+              (result) => result.id.toString() == '0C:B8:15:C3:CE:1A',
+              //(result) => result.device.id.toString() == '0CB815C3CE1A',
+              orElse: () => throw Exception('Device not found'));
 
-        // Discover the desired service and characteristic
-        print('start2');
-        List<BluetoothService> services = await device.discoverServices();
-        print('start3');
-        BluetoothService desiredService = services.firstWhere(
-            (service) =>
-                service.uuid.toString() ==
-                '0000180f-0000-1000-8000-00805f9b34fb',
-            orElse: () => throw Exception('Service not found'));
+          // Connect to the device
+          device = desiredDevice;
+          print('device connect start');
+          try {
+            await device.connect();
+            await FlutterBluePlus.instance.connectedDevices
+                .then((value) => print('device connect ${value.length}'));
+          } on Exception catch (e) {
+            print('device error ${e.toString()}');
+            // TODO
+          }
+          print('device connect end');
 
-        characteristic = desiredService.characteristics.firstWhere(
-            (characteristic) =>
-                characteristic.uuid.toString() ==
-                '00002a19-0000-1000-8000-00805f9b34fb',
-            orElse: () => throw Exception('Characteristic not found'));
+          // Discover the desired service and characteristic
+          print('start2');
+          List<BluetoothService> services = await device.discoverServices();
+          print('start3');
+          BluetoothService desiredService = services.firstWhere(
+              (service) =>
+                  service.uuid.toString() ==
+                  '0000180f-0000-1000-8000-00805f9b34fb',
+              orElse: () => throw Exception('Service not found'));
 
-        // Subscribe to notifications from the characteristic
-        await characteristic.setNotifyValue(true);
-        characteristic.value.listen(_onCurrentDataReceived);
-        print('Connected to the device');
-      } else {
-        print('No device fonund');
-        state = const ApiState.loaded(
-            data: "Please Connect the device throw\nbluetooth or, reload.");
-      }
+          characteristic = desiredService.characteristics.firstWhere(
+              (characteristic) =>
+                  characteristic.uuid.toString() ==
+                  '00002a19-0000-1000-8000-00805f9b34fb',
+              orElse: () => throw Exception('Characteristic not found'));
+
+          // Subscribe to notifications from the characteristic
+          await characteristic.setNotifyValue(true);
+          characteristic.value.listen(_onCurrentDataReceived);
+          print('Connected to the device');
+        } else {
+          print('No device fonund');
+          state = const ApiState.loaded(
+              data: "Please Connect the device throw\nbluetooth or, reload.");
+        }
+      });
     } catch (e) {
       state = ApiState.error(
         error: e.toString(),

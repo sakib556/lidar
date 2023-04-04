@@ -1,4 +1,4 @@
-# ebike_app
+# lidar_app
 
 A new Flutter project.
 

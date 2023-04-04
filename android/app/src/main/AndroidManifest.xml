@@ -15,7 +15,7 @@
   <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
   <uses-feature android:name="android.hardware.wifi" />
    <application
-        android:label="ebike_app"
+        android:label="Lidar"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

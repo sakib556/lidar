@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:ebike_app/helper/api_state.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_blue/flutter_blue.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -11,7 +11,7 @@ class BluetoothListNotifier
   BluetoothListNotifier() : super(const ApiState.initial()) {
     getPairedDevices();
   }
-  final _bluetooth = FlutterBluePlus.instance;
+  final _bluetooth = FlutterBlue.instance;
   Future<void> getPairedDevices() async {
     state = const ApiState.loading();
     List<BluetoothDevice> devices = [];
@@ -21,7 +21,7 @@ class BluetoothListNotifier
       // await Permission.bluetoothScan.request();
       // await Permission.bluetoothAdvertise.request();
       print("getPairedDevices start");
-      await _bluetooth.bondedDevices.then((event) {
+      await _bluetooth.connectedDevices.then((event) {
         devices = event;
         print("Paired devices list size ${event.length}");
         state = ApiState.loaded(data: devices);
@@ -43,7 +43,7 @@ class GetBluetoothDataNotifier extends StateNotifier<ApiState<String>> {
     print("GetBluetoothDataNotifier contructor start");
     getData();
   }
-  final _bluetooth = FlutterBluePlus.instance;
+  final _bluetooth = FlutterBlue.instance;
   // String _messageBuffer = '';
   List<BluetoothDevice>? devicesList;
   List<BluetoothService>? bluetoothServices;
@@ -67,11 +67,16 @@ class GetBluetoothDataNotifier extends StateNotifier<ApiState<String>> {
       // List<ScanResult> scanResults = await FlutterBluePlus.instance
       //     .scan(timeout: const Duration(seconds: 5))
       //     .toList();
-      await _bluetooth.bondedDevices.then((event) async {
+      _bluetooth.scanResults.listen((event) {
+        print('scan List size1 ${event.length}');
+
+      });
+
+      await _bluetooth.connectedDevices.then((event) async {
         // devices = event;
         // print("Paired devices list size ${event.length}");
         // state = ApiState.loaded(data: devices);
-        print('scan List size ${event.length}');
+        print('scan List size2 ${event.length}');
         if (event.isNotEmpty) {
           event
               .map((e) => print(
@@ -94,7 +99,7 @@ class GetBluetoothDataNotifier extends StateNotifier<ApiState<String>> {
           print('device connect start');
           try {
             await device.connect();
-            await FlutterBluePlus.instance.connectedDevices
+            await FlutterBlue.instance.connectedDevices
                 .then((value) => print('device connect ${value.length}'));
           } on Exception catch (e) {
             print('device error ${e.toString()}');

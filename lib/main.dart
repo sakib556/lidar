@@ -2,9 +2,12 @@ import 'package:ebike_app/views/dashboard_sceen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await _getPermission();
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -15,6 +18,19 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
+Future<void> _getPermission() async {
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    await Permission.locationWhenInUse.request();
+    await Permission.bluetooth.request();
+    await Permission.bluetoothScan.request();
+    await Permission.bluetoothConnect.request();
+  } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+//iOS specific code
+  } else {
+//web or desktop specific code
+  }
+}
+
 class _MyAppState extends State<MyApp> {
   @override
   void initState() {
@@ -23,6 +39,8 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    _getPermission();
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Lidar',

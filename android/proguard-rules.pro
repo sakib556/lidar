@@ -6,5 +6,6 @@
 +-keep class io.flutter.**  { *; }
 +-keep class io.flutter.plugins.**  { *; }
 +-keep class com.google.firebase.** { *; }
++-keep class com.boskokg.flutter_blue_plus.** { *; }
 +-dontwarn io.flutter.embedding.**
 +-ignorewarnings

@@ -26,7 +26,7 @@ class DashBoardScreen extends ConsumerWidget {
         const SizedBox(
           height: 50,
         ),
-        const BluetoothTextData()
+        const ShowCounter()
       ],
     );
   }

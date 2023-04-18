@@ -59,10 +59,7 @@ class BluetoothDeviceList extends ConsumerWidget {
               ),
             )
             .toList(),
-
       ],
     );
   }
 }
-
-

@@ -23,8 +23,8 @@ class ShowCounter extends StatelessWidget {
               ),
             ),
             child: const Center(
-              child:
-                  Padding(padding: EdgeInsets.all(10.0), child: BluetoothTextData()),
+              child: Padding(
+                  padding: EdgeInsets.all(10.0), child: BluetoothTextData()),
             ),
           ),
         )

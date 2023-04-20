@@ -95,7 +95,8 @@ class _MyAppState extends State<HomeScreen> {
       home: Scaffold(
         body: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Column(
+          child: ListView(
+            shrinkWrap: true,
             children: <Widget>[
               BleDevice(
                   device: targetDevice,

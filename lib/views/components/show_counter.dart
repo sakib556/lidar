@@ -1,4 +1,3 @@
-import 'package:ebike_app/provider/bluetooth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -34,30 +33,6 @@ class ShowCounter extends StatelessWidget {
     ));
   }
 }
-
-class BluetoothTextData extends ConsumerWidget {
-  const BluetoothTextData({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ref.watch(getBluetoothDataProvider).maybeMap(
-        orElse: () => _textWidget("Please wait......"),
-        error: (value) =>
-            _textWidget("Connection Failed.\nError :\n${value.error}"),
-        loaded: ((value) => _textWidget(value.data)));
-  }
-
-  Widget _textWidget(String text) {
-    return Center(
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 24),
-      ),
-    );
-  }
-}
-
 class Headline extends StatelessWidget {
   const Headline({Key? key}) : super(key: key);
 

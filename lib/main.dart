@@ -1,5 +1,4 @@
-import 'package:ebike_app/views/dashboard_sceen.dart';
-import 'package:ebike_app/views/test_blue.dart';
+import 'package:ebike_app/views/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,14 +43,14 @@ class _MyAppState extends State<MyApp> {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Lidar',
+      title: 'LIDAR',
       theme: ThemeData(),
       builder: EasyLoading.init(),
       home: Scaffold(
           appBar: AppBar(
-            title: const Text("Lidar"),
+            title: const Text("LIDAR"),
           ),
-          body:  TestBlue()),
+          body:  const HomeScreen()),
     );
   }
 }

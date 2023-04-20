@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ShowCounter extends StatelessWidget {
-  const ShowCounter({Key? key}) : super(key: key);
+  const ShowCounter({Key? key, required this.counterValue}) : super(key: key);
+  final String counterValue;
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -22,9 +23,10 @@ class ShowCounter extends StatelessWidget {
                 width: 2,
               ),
             ),
-            child: const Center(
+            child: Center(
               child: Padding(
-                  padding: EdgeInsets.all(10.0), child: BluetoothTextData()),
+                  padding: const EdgeInsets.all(10.0),
+                  child: Text(counterValue)),
             ),
           ),
         )

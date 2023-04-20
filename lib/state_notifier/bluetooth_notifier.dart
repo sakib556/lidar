@@ -45,66 +45,78 @@ class GetBluetoothDataNotifier extends StateNotifier<ApiState<String>> {
     getData();
   }
   final _bluetooth = FlutterBluePlus.instance;
-  // String _messageBuffer = '';
   List<BluetoothDevice>? devicesList;
   List<BluetoothService>? bluetoothServices;
   String blueUuid = "";
-
   String messages = '';
-  String _messageBuffer = '';
-  BluetoothDevice? device;
+  late BluetoothDevice device;
   late BluetoothCharacteristic characteristic;
-
+  bool isDiscovering = false;
+  StreamSubscription<bool>? streamIsDiscovering;
+  StreamSubscription<List<int>>? streamGetData;
   Future<void> getData() async {
     try {
       print("getData start");
       state = const ApiState.loading();
-
       print("scan start");
-      // Scan for devices with a specific name or service UUID
-      List<ScanResult> scanResults = await FlutterBluePlus.instance
-          .scan(timeout: const Duration(seconds: 5))
-          .toList();
-      print("scan end");
-      print('scan List size ${scanResults.length}');
-      for (var element in scanResults) {
-        print(
-            'scan Device:\nDevice id ${element.device.id.id}\nDevice name: ${element.device.name}');
-        if (element.device.name == "LIDAR") {
-          device = element.device;
-          print('lidar found');
+      await _bluetooth.bondedDevices.then((event) async {
+        print('bondedDevices List size ${event.length}');
+        if (event.isNotEmpty) {
+          event
+              .map((e) => print(
+                  'Paired Device List :\nDevice id ${e.id}\nDevice name: ${e.name}'))
+              .toList();
+
+          BluetoothDevice desiredDevice = event.firstWhere(
+              (result) => result.name.toString() == 'LIDAR',
+              orElse: () => throw Exception('Device not found'));
+          device = desiredDevice;
+          try {
+            streamIsDiscovering =
+                device.isDiscoveringServices.listen((event) async {
+              isDiscovering = event;
+              print('called discover $isDiscovering');
+            });
+            if (!isDiscovering) {
+              print('device connect start $isDiscovering');
+              await device.connect();
+            }
+          } on Exception catch (e) {
+            print('device error ${e.toString()}');
+            state = const ApiState.loading();
+          }
+          print('device connect end');
+
+          // Discover the desired service and characteristic
+          List<BluetoothService> services = await device.discoverServices();
+          BluetoothService desiredService = services.firstWhere(
+              (service) =>
+                  service.uuid.toString() ==
+                  '4fafc201-1fb5-459e-8fcc-c5c9c331914b',
+              orElse: () => throw Exception('Service not found'));
+          characteristic = desiredService.characteristics.firstWhere(
+              (characteristic) =>
+                  characteristic.uuid.toString() ==
+                  'beb5483e-36e1-4688-b7f5-ea07361b26a8',
+              orElse: () => throw Exception('Characteristic not found'));
+          print("object 9");
+          // if (!characteristic.isNotifying) {
+          //   await characteristic.setNotifyValue(true);
+          // }
+          print("object 10");
+          try {
+            characteristic.value.listen(_readValue);
+          } catch (e) {
+            print('catched: ${e.toString()}');
+          }
+          print('Get data from the device');
+        } else {
+          print('No device founnd');
+          state = const ApiState.loaded(
+              data:
+                  "Please paired / connect the device\nthrow bluetooth or, reload.");
         }
-      }
-      if (device != null) {
-        // Connect to the device
-        print('device connect start');
-        await device!.connect();
-        print('device connect end');
-
-        // Discover the desired service and characteristic
-        print('start2');
-        List<BluetoothService> services = await device!.discoverServices();
-        print('start3');
-        BluetoothService desiredService = services.firstWhere(
-            (service) =>
-                service.uuid.toString() ==
-                '4fafc201-1fb5-459e-8fcc-c5c9c331914b',
-            orElse: () => throw Exception('Service not found'));
-
-        characteristic = desiredService.characteristics.firstWhere(
-            (characteristic) =>
-                characteristic.uuid.toString() ==
-                'beb5483e-36e1-4688-b7f5-ea07361b26a8',
-            orElse: () => throw Exception('Characteristic not found'));
-        // Subscribe to notifications from the characteristic
-        await characteristic.setNotifyValue(true);
-        characteristic.read().asStream().listen(_readValue);
-        print('Connected to the device');
-      } else {
-        print('LIDAR not found');
-        state = const ApiState.loaded(
-            data: "Please Connect the device throw\nbluetooth or, reload.");
-      }
+      });
     } catch (e) {
       state = ApiState.error(
         error: e.toString(),
@@ -112,7 +124,15 @@ class GetBluetoothDataNotifier extends StateNotifier<ApiState<String>> {
       print("err: $e");
     }
   }
-
+            // characteristic.read().asStream().listen(
+            //       (v) => print(
+            //           '  stream.onData(): future value: ${utf8.decode(v)}'),
+            //       onDone: () => print('  stream.onDone(): done'),
+            //       onError: (e) => print('  stream.onError(): ${e.toString()}'),
+            //       // cancelOnError: false, // default - onDone() will be called even when errors happens
+            //       cancelOnError:
+            //           true, // onDone() will NOT be called when errors happens
+            //     );
   Future<void> writeValue(String value) async {
     final list = utf8.encode(value);
     characteristic.write(list);
@@ -131,84 +151,14 @@ class GetBluetoothDataNotifier extends StateNotifier<ApiState<String>> {
     }
   }
 
-  // @override
-  // void dispose() {
-  //   if (streamIsDiscovering != null) {
-  //     streamIsDiscovering!.cancel();
-  //   }
-  //   if (streamGetData != null) {
-  //     streamGetData!.cancel();
-  //   }
-  //   super.dispose();
-  // }
-
-  // void _onCurrentDataReceived(List<int> data) {
-  //   // Allocate buffer for parsed data
-  //   print('Start _onCurrentDataReceived');
-  //   int backspacesCounter = 0;
-  //   for (var byte in data) {
-  //     print('Start 2! $backspacesCounter');
-  //     if (byte == 8 || byte == 127) {
-  //       //print('Start 3! $backspacesCounter');
-  //       backspacesCounter++;
-  //       //print('Start 3.2! $backspacesCounter');
-  //     }
-  //   }
-  //   print('Start 3.3! ${data.length}');
-  //   Uint8List buffer = Uint8List(data.length - backspacesCounter);
-  //   // print('Start 3.4! ${buffer.length}');
-  //   int bufferIndex = buffer.length;
-  //   //  print('Start 3.5! $bufferIndex');
-  //   // Apply backspace control character
-  //   backspacesCounter = 0;
-  //   print('Start 4!');
-  //   for (int i = data.length - 1; i >= 0; i--) {
-  //     //print('Start 5! ${data.length}');
-  //     if (data[i] == 8 || data[i] == 127) {
-  //       backspacesCounter++;
-  //       // print('Start 5.2! $backspacesCounter');
-  //     } else {
-  //       if (backspacesCounter > 0) {
-  //         print('Start 5.3! $backspacesCounter');
-  //         backspacesCounter--;
-  //       } else {
-  //         print('Start 5.2! $bufferIndex:$i');
-  //         //  bufferIndex = bufferIndex-1;
-  //         buffer[--bufferIndex] = data[i];
-  //         //int ind = --bufferIndex;
-  //         // print('Start 5.2! $bufferIndex:$i');
-  //         print('Start 5.2! $bufferIndex');
-  //       }
-  //     }
-  //   }
-  //   // Create message if there is new line character
-  //   String dataString = String.fromCharCodes(buffer);
-  //   int index = buffer.indexOf(13);
-  //   print('index1 $index!');
-  //   if (~index != 0) {
-  //     // print('index2 $index!');
-  //     messages = backspacesCounter > 0
-  //         ? _messageBuffer.substring(
-  //             0, _messageBuffer.length - backspacesCounter)
-  //         : _messageBuffer + dataString.substring(0, index);
-  //     // if (_messageBuffer.isNotEmpty) {
-  //     //   print('is not empty1 $_messageBuffer ...');
-  //     //   state = ApiState.loaded(data: _messageBuffer);
-  //     // }
-  //     _messageBuffer = dataString.substring(index);
-  //     print('buffer1 $_messageBuffer!');
-  //   } else {
-  //     _messageBuffer = (backspacesCounter > 0
-  //         ? _messageBuffer.substring(
-  //             0, _messageBuffer.length - backspacesCounter)
-  //         : _messageBuffer + dataString);
-  //     // print('index $index!');
-  //     //_messageBuffer = dataString.substring(index+1);
-  //     print('buffer2 output $_messageBuffer ...');
-  //     if (_messageBuffer.isNotEmpty) {
-  //       print('is not empty 2 $_messageBuffer ...');
-  //       state = ApiState.loaded(data: _messageBuffer);
-  //     }
-  //   }
-  // }
+  @override
+  void dispose() {
+    if (streamIsDiscovering != null) {
+      streamIsDiscovering!.cancel();
+    }
+    if (streamGetData != null) {
+      streamGetData!.cancel();
+    }
+    super.dispose();
+  }
 }
